@@ -95,11 +95,11 @@ app.title = 'Pyronear - Monitoring platform'
 app.config.suppress_callback_exceptions = True
 server = app.server  # Gunicorn will be looking for the server attribute of this module
 
-response = requests.get('https://api.pyronear.org/devices/', headers=api_client.headers)
+response = requests.get('http://pyronear-api.herokuapp.com/devices/', headers=api_client.headers)
 # Check token expiration
 if response.status_code == 401:
-    api_client.refresh_token(cfg.API_LOGIN, cfg.API_PWD)
-    response = requests.get('https://api.pyronear.org/devices/', headers=api_client.headers)
+    api_client.refresh_token(cfg.API_DEV_LOGIN, cfg.API_DEV_PWD)
+    response = requests.get('http://pyronear-api.herokuapp.com/devices/', headers=api_client.headers)
 
 # We create a rough layout, filled with the content of the homepage/alert page
 app.layout = html.Div(
@@ -278,7 +278,7 @@ def update_live_alerts_data(
     response = api_client.get_ongoing_alerts()
     # Check token expiration
     if response.status_code == 401:
-        api_client.refresh_token(cfg.API_LOGIN, cfg.API_PWD)
+        api_client.refresh_token(cfg.API_DEV_LOGIN, cfg.API_DEV_PWD)
         response = api_client.get_ongoing_alerts()
     response = response.json()
     # Only for demo purposes, this should be deleted for dev and later in production
@@ -294,10 +294,10 @@ def update_live_alerts_data(
 
     # We now want to build the boolean indexing mask that indicates whether or not the event is unacknowledged
     # We start by making an API call to fetch all events
-    url = cfg.API_URL + '/events/'
+    url = cfg.API_DEV_URL + '/events/'
     response = requests.get(url, headers=api_client.headers)
     if response.status_code == 401:
-        api_client.refresh_token(cfg.API_LOGIN, cfg.API_PWD)
+        api_client.refresh_token(cfg.API_DEV_LOGIN, cfg.API_DEV_PWD)
         response = requests.get(url, headers=api_client.headers)
     all_events = response.json()
 
@@ -313,6 +313,9 @@ def update_live_alerts_data(
     # And we deduce the subset of alerts that we can deem to be "live"
     live_alerts = all_alerts[mask_acknowledgement].copy()
 
+    """
+    Commented in dev to render all alert even during night time
+
     # We then fetch sunrise and sunset times and add a safety margin of 30 min (converting from UTC) to cover night time
     sunrise = night_time_data['results']['sunrise'][:-6]
     sunrise = datetime.fromisoformat(str(sunrise)) + timedelta(hours=2.5)
@@ -325,6 +328,7 @@ def update_live_alerts_data(
     # Are there some live alerts during night time ? If yes let's filter them out
     mask = live_alerts['created_at'].map(lambda x: is_hour_between(sunrise, sunset, x))
     live_alerts = live_alerts[mask].copy()
+    """
 
     # Is there any live alert to display?
     if live_alerts.empty:
@@ -355,7 +359,7 @@ def update_live_alerts_data(
                     # For each live alert, we fetch the URL of the associated frame
                     response = api_client.get_media_url(row["media_id"])
                     if response.status_code == 401:
-                        api_client.refresh_token(cfg.API_LOGIN, cfg.API_PWD)
+                        api_client.refresh_token(cfg.API_DEV_LOGIN, cfg.API_DEV_PWD)
                         response = api_client.get_media_url(row["media_id"])
                     img_url = response.json()['url']
 
@@ -472,7 +476,7 @@ def update_live_alerts_data(
                         # For each new live alert, we fetch the URL of the associated frame
                         response = api_client.get_media_url(row["media_id"])
                         if response.status_code == 401:
-                            api_client.refresh_token(cfg.API_LOGIN, cfg.API_PWD)
+                            api_client.refresh_token(cfg.API_DEV_LOGIN, cfg.API_DEV_PWD)
                             response = api_client.get_media_url(row["media_id"])
                         img_url = response.json()['url']
 
@@ -640,7 +644,7 @@ def manage_login_modal(n_clicks, username, password, login_storage, current_cent
 
         else:
             # This is the route of the API that we are going to use for the credential check
-            login_route_url = cfg.API_URL + '/login/access-token'
+            login_route_url = cfg.API_DEV_URL + '/login/access-token'
 
             # We create a mini-dictionary with the credentials passsed by the user
             data = {
@@ -669,8 +673,8 @@ def manage_login_modal(n_clicks, username, password, login_storage, current_cent
                 # (although the login modal does not remain open long enough for it to be readable by the user)
                 form_feedback.append(html.P("Vous êtes connecté, bienvenue sur la plateforme Pyronear !"))
 
-                # For now the group_id is not fetched, we equalize it artificially to 1
-                group_id = '1'
+                # For now the group_id is not fetched, we equalize it artificially to 2 for dev
+                group_id = '2'
 
                 # We load the group correspondences stored in a dedicated JSON file in the data folder
                 path = os.path.dirname(os.path.abspath(__file__))
@@ -812,10 +816,10 @@ def zoom_on_alert(n_clicks, live_alerts, frame_urls):
 
         # We make an API call to check whether the event has already been acknowledged or not
         # Depending on the response, an acknowledgement button will be displayed or not in the alert overview
-        url = cfg.API_URL + f"/events/{event_id}/"
+        url = cfg.API_DEV_URL + f"/events/{event_id}/"
         response = requests.get(url, headers=api_client.headers)
         if response.status_code == 401:
-            api_client.refresh_token(cfg.API_LOGIN, cfg.API_PWD)
+            api_client.refresh_token(cfg.API_DEV_LOGIN, cfg.API_DEV_PWD)
             response = requests.get(url, headers=api_client.headers)
         acknowledged = response.json()['is_acknowledged']
 
@@ -1122,7 +1126,7 @@ def confirm_alert_acknowledgement(n_clicks):
         response = api_client.acknowledge_event(event_id=int(event_id))
 
         if response.status_code == 401:
-            api_client.refresh_token(cfg.API_LOGIN, cfg.API_PWD)
+            api_client.refresh_token(cfg.API_DEV_LOGIN, cfg.API_DEV_PWD)
             api_client.acknowledge_event(event_id=int(event_id))
 
         return ['close', html.P('Alerte acquittée.')]
@@ -1421,7 +1425,7 @@ def update_alert_screen(n_intervals, devices_data, site_devices_data, night_time
     response = api_client.get_ongoing_alerts()
     # Check token expiration
     if response.status_code == 401:
-        api_client.refresh_token(cfg.API_LOGIN, cfg.API_PWD)
+        api_client.refresh_token(cfg.API_DEV_LOGIN, cfg.API_DEV_PWD)
         response = api_client.get_ongoing_alerts()
     response = response.json()
     # Only for demo purposes, this should be deleted for dev and later in production
@@ -1446,10 +1450,10 @@ def update_alert_screen(n_intervals, devices_data, site_devices_data, night_time
 
         # We now want to build the boolean indexing mask that indicates whether or not the event is unacknowledged
         # We start by making an API call to fetch all events
-        url = cfg.API_URL + '/events/'
+        url = cfg.API_DEV_URL + '/events/'
         response = requests.get(url, headers=api_client.headers)
         if response.status_code == 401:
-            api_client.refresh_token(cfg.API_LOGIN, cfg.API_PWD)
+            api_client.refresh_token(cfg.API_DEV_LOGIN, cfg.API_DEV_PWD)
             response = requests.get(url, headers=api_client.headers)
         all_events = response.json()
 
@@ -1524,7 +1528,7 @@ def update_alert_screen(n_intervals, devices_data, site_devices_data, night_time
                 try:
                     response = api_client.get_media_url(row["media_id"])
                     if response.status_code == 401:
-                        api_client.refresh_token(cfg.API_LOGIN, cfg.API_PWD)
+                        api_client.refresh_token(cfg.API_DEV_LOGIN, cfg.API_DEV_PWD)
                         response = api_client.get_media_url(row["media_id"])
                     img_url = response.json()['url']
 
@@ -1616,11 +1620,11 @@ def update_dashboard_table(n_intervals):
     This builds and refreshes the dashboard table to monitor devices status every minute
     Had to fetch devices data again for freshness purposes
     """
-    response = requests.get('https://api.pyronear.org/devices/', headers=api_client.headers)
+    response = requests.get('http://pyronear-api.herokuapp.com/devices/', headers=api_client.headers)
     # Check token expiration
     if response.status_code == 401:
-        api_client.refresh_token(cfg.API_LOGIN, cfg.API_PWD)
-        response = requests.get('https://api.pyronear.org/devices/', headers=api_client.headers)
+        api_client.refresh_token(cfg.API_DEV_LOGIN, cfg.API_DEV_PWD)
+        response = requests.get('http://pyronear-api.herokuapp.com/devices/', headers=api_client.headers)
 
     # We filters devices_data to only display devices belonging to the sdis and then make the comparison between
     # last_ping and datetime.now()
