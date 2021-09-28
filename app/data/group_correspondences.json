@@ -3,5 +3,12 @@
         "center_lat": 44.73,
         "center_lon": 4.27,
         "zoom": 9
+    },
+
+    "2": {
+        "center_lat": 48.8566,
+        "center_lon": 2.3522,
+        "zoom": 9
     }
+
 }
