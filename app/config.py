@@ -10,8 +10,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 DEBUG: bool = os.environ.get('DEBUG', '') != 'False'
-API_URL: str = os.environ.get('API_URL')
-API_LOGIN: str = os.environ.get('API_LOGIN')
-API_PWD: str = os.environ.get('API_PWD')
+API_DEV_URL: str = os.environ.get('API_DEV_URL')
+API_DEV_LOGIN: str = os.environ.get('API_DEV_LOGIN')
+API_DEV_PWD: str = os.environ.get('API_DEV_PWD')
 PYRORISK_FALLBACK: str = "https://github.com/pyronear/pyro-risks/releases/download/v0.1.0-data/pyrorisk_20200901.json"
 GEOJSON_FILE: str = 'https://github.com/pyronear/pyro-risks/releases/download/v0.1.0-data/departements.geojson'
